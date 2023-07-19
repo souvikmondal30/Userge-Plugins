@@ -65,7 +65,7 @@ async def labstack(message: Message):
                     estimated_total_time = downloader.get_eta(human=True)
                     progress_str = \
                         "__{}__\n" + \
-                        "```[{}{}]```\n" + \
+                        "```\n[{}{}]```\n" + \
                         "**Progress** : `{}%`\n" + \
                         "**URL** : `{}`\n" + \
                         "**FILENAME** : `{}`\n" + \
@@ -76,9 +76,9 @@ async def labstack(message: Message):
                     progress_str = progress_str.format(
                         "Downloading",
                         ''.join((config.FINISHED_PROGRESS_STR
-                                 for i in range(math.floor(percentage / 5)))),
+                                 for _ in range(math.floor(percentage / 5)))),
                         ''.join((config.UNFINISHED_PROGRESS_STR
-                                 for i in range(20 - math.floor(percentage / 5)))),
+                                 for _ in range(20 - math.floor(percentage / 5)))),
                         round(percentage, 2),
                         url,
                         file_name,
@@ -133,12 +133,10 @@ async def labstack(message: Message):
     files = {
         'files': (filename, open(dl_loc, 'rb')),
     }
-    send_url = "https://up.labstack.com/api/v1/links/{}/send".format(
-        r['code'])
+    send_url = f"https://up.labstack.com/api/v1/links/{r['code']}/send"
     response = requests.post(send_url, files=files, **kwargs)
-    if (response.status_code) == 200:
-        link = (
-            "https://up.labstack.com/api/v1/links/{}/receive".format(r['code']))
+    if response.status_code == 200:
+        link = f"https://up.labstack.com/api/v1/links/{r['code']}/receive"
         await message.edit(f"**Filename**: `{filename}`\n**Size**: "
                            f"`{humanbytes(filesize)}`\n\n"
                            f"**Link**: {link}\n`Expires in 7 Days`")

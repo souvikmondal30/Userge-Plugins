@@ -22,10 +22,12 @@ from pyrogram.types import (
     InlineKeyboardButton,
     InlineKeyboardMarkup
 )
+from pyrogram import enums
 
 from userge import userge, Message, config, pool
 from .. import imdb
 
+TMDB_KEY = "5dae31e75ff0f7a0befc272d5deadd73"
 THUMB_PATH = config.Dynamic.DOWN_PATH + "imdb_thumb.jpg"
 
 
@@ -60,7 +62,7 @@ async def _imdb(message: Message):
             chat_id=message.chat.id,
             photo=THUMB_PATH,
             caption=description,
-            parse_mode="html"
+            parse_mode=enums.ParseMode.HTML
         )
         await message.delete()
     elif image_link is not None:
@@ -68,20 +70,31 @@ async def _imdb(message: Message):
             chat_id=message.chat.id,
             photo=image_link.replace("_V1_", "_V1_UX720"),
             caption=description,
-            parse_mode="html"
+            parse_mode=enums.ParseMode.HTML
         )
         await message.delete()
     else:
         await message.edit(
             description,
             disable_web_page_preview=True,
-            parse_mode="HTML"
+            parse_mode=enums.ParseMode.HTML
         )
 
 
 async def get_movie_description(imdb_id, max_length):
     response = await _get(imdb.API_TWO_URL.format(imdbttid=imdb_id))
     soup = json.loads(response.text)
+
+    yt_code = None
+    response2 = await _get(
+        "http://api.themoviedb.org/3/movie/" + imdb_id + "/videos?api_key=" + TMDB_KEY
+    )
+    soup2 = json.loads(response2.text)
+    try:
+        yt_code = soup2.get("results")[0].get("key")
+    except (IndexError, json.JSONDecodeError, AttributeError, TypeError):
+        if soup.get("trailer_vid_id"):
+            yt_code = soup.get("trailer_vid_id")
 
     mov_link = f"https://www.imdb.com/title/{imdb_id}"
     mov_name = soup.get('title')
@@ -114,6 +127,7 @@ async def get_movie_description(imdb_id, max_length):
   <b>Stars🎭: </b><code>{stars}</code>
 
 <b>IMDB URL Link🔗: </b>{mov_link}
+<b>YOUTUBE TRAILER 🎦: </b> https://m.youtube.com/watch?v={yt_code}
 
 <b>Story Line : </b><em>{story_line}</em>"""
 
@@ -129,7 +143,6 @@ async def get_movie_description(imdb_id, max_length):
 def get_countries_and_languages(soup):
     languages = soup.get("Language")
     countries = soup.get("CountryOfOrigin")
-    lg_text = ""
     if languages:
         if len(languages) > 1:
             lg_text = ', '.join(languages)
@@ -247,7 +260,7 @@ if userge.has_bot:
                     title=f" {title} {year}",
                     input_message_content=InputTextMessageContent(
                         message_text=message_text,
-                        parse_mode="html",
+                        parse_mode=enums.ParseMode.HTML,
                         disable_web_page_preview=False
                     ),
                     url=imdb_url,
@@ -266,15 +279,9 @@ if userge.has_bot:
                 )
             )
         resfo = srch_results.get("q")
-        await inline_query.answer(
-            results=oorse,
-            cache_time=300,
-            is_gallery=False,
-            is_personal=False,
-            next_offset="",
-            switch_pm_text=f"Found {len(oorse)} results for {resfo}",
-            switch_pm_parameter="imdb"
-        )
+        await inline_query.answer(results=oorse,
+                                  switch_pm_text=f"Found {len(oorse)} results for {resfo}",
+                                  switch_pm_parameter="imdb")
         inline_query.stop_propagation()
 
 

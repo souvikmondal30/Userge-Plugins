@@ -12,6 +12,8 @@
 
 import os
 
+from pyrogram import enums
+
 from userge import userge, Message, filters, config, get_collection
 from ...utils import ocr
 
@@ -41,10 +43,10 @@ async def autofastly(msg: Message):
     if ocr.OCR_SPACE_API_KEY is None:
         await msg.edit(
             "<code>Oops!!get the OCR API from</code> "
-            "<a href='http://eepurl.com/bOLOcf'>HERE</a> "
+            "<a href='https://eepurl.com/bOLOcf'>HERE</a> "
             "<code>& add it to Heroku config vars</code> (<code>OCR_SPACE_API_KEY</code>)",
             disable_web_page_preview=True,
-            parse_mode="html", del_in=0)
+            parse_mode=enums.ParseMode.HTML, del_in=0)
         return
 
     IS_ENABLED = not IS_ENABLED
@@ -66,7 +68,7 @@ async def fastly_handler(msg: Message):
     parse = await ocr.ocr_space_file(img)
     try:
         text = parse["ParsedResults"][0]["ParsedText"]
-        text = text.split("By@")[0].replace("\n", "").replace("\r", "")
+        text = text.split("By@")[0].replace("\n", "").replace("\r", "").replace(" ", "")
         if text:
             await msg.reply_text(text.capitalize())
             await CHANNEL.log(f'Auto Fastly Responded in {msg.chat.title} [{msg.chat.id}]')
